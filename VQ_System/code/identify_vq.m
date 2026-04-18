@@ -1,36 +1,32 @@
-% identify_speaker.m
-% Identifies a speaker from an unknown test voice file
+% identify_vq.m
+function identifiedName = identify_vq(testFile)
 
-function identifiedName = identify_speaker(testFile)
+addpath('../../Shared/code');
 
 % 1. Load trained models
-if ~exist('../results/models.mat', 'file')
-    error('No models found! Run train_all.m first.');
+modelPath = '../results/models.mat';
+if ~exist(modelPath, 'file')
+    error('No models found! Run train_vq.m first.');
 end
-load('../results/models.mat', 'codebooks', 'speakerNames');
+load(modelPath, 'codebooks', 'speakerNames');
 
-% 2. Extract Features from test voice
+% 2. Extract Features
 [audio, fs] = audioread(testFile);
 preEmphasized = filter([1 -0.97], 1, audio);
-testCoeffs = mfcc(preEmphasized, fs, 'NumCoeffs', 13);
-testCoeffs = testCoeffs'; % Transpose for distance calculation
+testCoeffs = mfcc(preEmphasized, fs, 'NumCoeffs', 13)';
 
-% 3. Calculate Distortion for every speaker
+% 3. Calculate Distortion
 numSpeakers = length(speakerNames);
 distortions = zeros(1, numSpeakers);
 
 for i = 1:numSpeakers
-    % Distance between test MFCCs and current speaker's codebook
     dist = disteu(testCoeffs, codebooks{i});
-    % Minimum distance for each test frame, averaged over the utterance
     distortions(i) = mean(min(dist, [], 2));
 end
 
-% 4. Find the minimum distortion
 [minDist, index] = min(distortions);
 identifiedName = speakerNames{index};
 
-fprintf('Test File: %s\n', testFile);
 fprintf('Identified as: %s (Distortion: %.4f)\n', identifiedName, minDist);
 
 end
