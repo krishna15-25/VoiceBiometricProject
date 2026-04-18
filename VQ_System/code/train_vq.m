@@ -1,47 +1,50 @@
 % train_vq.m
-% Enrolls all speakers found in data/train/ and saves codebooks
-
-% 1. Setup paths
+function train_vq()
 addpath('../../Shared/code'); 
-trainDir = '../../data/train/'; % Look up two levels for data
-
-% Parameters
+trainDir = '../../data/train/';
 fs = 16000;
 numCoeffs = 13;
-codebookSize = 16;
+codebookSize = 128; % High Resolution
 
-% Get list of speaker folders
 speakerFolders = dir(trainDir);
 speakerFolders = speakerFolders([speakerFolders.isdir] & ~startsWith({speakerFolders.name}, '.'));
-
 numSpeakers = length(speakerFolders);
-if numSpeakers == 0
-    error('No speaker folders found in %s. Run generate_test_data first!', trainDir);
-end
 
 codebooks = cell(1, numSpeakers);
 speakerNames = {speakerFolders.name};
 
-fprintf('Starting enrollment for %d speakers...\n', numSpeakers);
+fprintf('Training Optimized VQ (128-Centroids + Energy Filtering) for %d speakers...\n', numSpeakers);
 
 for i = 1:numSpeakers
     speakerName = speakerNames{i};
     speakerPath = fullfile(trainDir, speakerName);
-    wavFiles = dir(fullfile(speakerPath, '*.wav'));
+    wavFiles = [dir(fullfile(speakerPath, '*.wav')); dir(fullfile(speakerPath, '*.flac'))];
     
-    fprintf('  Processing %s (%d files)...\n', speakerName, length(wavFiles));
-    
-    all_coeffs = [];
+    all_features = [];
     for j = 1:length(wavFiles)
         [audio, ~] = audioread(fullfile(speakerPath, wavFiles(j).name));
         preEmphasized = filter([1 -0.97], 1, audio);
+        
+        % Extract MFCCs
         coeffs = mfcc(preEmphasized, fs, 'NumCoeffs', numCoeffs);
-        all_coeffs = [all_coeffs; coeffs];
+        
+        % VAD (Aggressive: only keep top 70% of energy frames)
+        energy = coeffs(:,1);
+        threshold = min(energy) + 0.7*(max(energy) - min(energy));
+        isSpeech = energy > threshold;
+        
+        % Feature Pruning: Remove C1 (Energy) to be volume-independent
+        % We keep C2 through C13
+        prunedFeats = coeffs(isSpeech, 2:end);
+        
+        all_features = [all_features; prunedFeats];
     end
     
-    codebooks{i} = vqlbg(all_coeffs', codebookSize);
+    % Train High-Res Codebook
+    codebooks{i} = vqlbg(all_features', codebookSize);
 end
 
 if ~exist('../results', 'dir'), mkdir('../results'); end
 save('../results/models.mat', 'codebooks', 'speakerNames');
-fprintf('\nEnrollment complete! Models saved to VQ_System/results/models.mat\n');
+disp('Optimized VQ Models Saved.');
+end
