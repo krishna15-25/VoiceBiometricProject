@@ -18,7 +18,12 @@ for i = 1:numSpeakers
     wavFiles = [dir(fullfile(testPath, '*.wav')); dir(fullfile(testPath, '*.flac'))];
     
     for j = 1:length(wavFiles)
-        [audio, fs] = audioread(fullfile(testPath, wavFiles(j).name));
+        try
+            [audio, fs] = audioread(fullfile(testPath, wavFiles(j).name));
+        catch
+            warning('Could not read file %s. Skipping.', wavFiles(j).name);
+            continue;
+        end
         preEmphasized = filter([1 -0.97], 1, audio);
         
         % Extract MFCCs
@@ -32,6 +37,11 @@ for i = 1:numSpeakers
         % Feature Pruning: Use C2:C13
         testFeats = coeffs(isSpeech, 2:end)'; 
         
+        if isempty(testFeats)
+            warning('No speech detected in %s. Skipping.', wavFiles(j).name);
+            continue;
+        end
+        
         dists = zeros(1, numSpeakers);
         for k = 1:numSpeakers
             dists(k) = mean(min(disteu(testFeats, codebooks{k}), [], 2));
@@ -44,7 +54,10 @@ for i = 1:numSpeakers
 end
 
 % Stats calculation
-confusionMat = (confusionMat ./ sum(confusionMat, 2)) * 100;
+rowSums = sum(confusionMat, 2);
+rowSums(rowSums == 0) = 1; % Prevent division by zero
+confusionMat = (confusionMat ./ rowSums) * 100;
+
 figure('Name', 'Optimized VQ Results');
 imagesc(confusionMat); colorbar; title('Optimized VQ Confusion Matrix (%)');
 

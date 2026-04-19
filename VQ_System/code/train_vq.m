@@ -22,7 +22,12 @@ for i = 1:numSpeakers
     
     all_features = [];
     for j = 1:length(wavFiles)
-        [audio, ~] = audioread(fullfile(speakerPath, wavFiles(j).name));
+        try
+            [audio, ~] = audioread(fullfile(speakerPath, wavFiles(j).name));
+        catch
+            warning('Could not read file %s. Skipping.', wavFiles(j).name);
+            continue;
+        end
         preEmphasized = filter([1 -0.97], 1, audio);
         
         % Extract MFCCs
@@ -40,8 +45,12 @@ for i = 1:numSpeakers
         all_features = [all_features; prunedFeats];
     end
     
-    % Train High-Res Codebook
-    codebooks{i} = vqlbg(all_features', codebookSize);
+    % Train High-Res Codebook if features were extracted
+    if ~isempty(all_features)
+        codebooks{i} = vqlbg(all_features', codebookSize);
+    else
+        warning('No valid features for speaker %s.', speakerName);
+    end
 end
 
 if ~exist('../results', 'dir'), mkdir('../results'); end
