@@ -9,6 +9,7 @@ numSpeakers = length(speakerNames);
 numCoeffs = 13;
 chunkSize = 50; % ~0.5 seconds
 genuineScores = []; impostorScores = [];
+confusionMat = zeros(numSpeakers, numSpeakers);
 
 fprintf('Evaluating Segmental-DTW (Chunked Alignment)...\n');
 
@@ -18,13 +19,23 @@ for i = 1:numSpeakers
     wavFiles = [dir(fullfile(testPath, '*.wav')); dir(fullfile(testPath, '*.flac'))];
     
     for j = 1:length(wavFiles)
-        [audio, fs] = audioread(fullfile(testPath, wavFiles(j).name));
+        try
+            [audio, fs] = audioread(fullfile(testPath, wavFiles(j).name));
+        catch
+            warning('Could not read file %s. Skipping.', wavFiles(j).name);
+            continue;
+        end
         preEmphasized = filter([1 -0.97], 1, audio);
         coeffs = mfcc(preEmphasized, fs, 'NumCoeffs', numCoeffs);
         
         energy = coeffs(:,1);
         isSpeech = energy > (min(energy) + 0.7*(max(energy) - min(energy)));
         testFeats = coeffs(isSpeech, 2:end)';
+        
+        if isempty(testFeats)
+            warning('No speech detected in trial %d. Skipping.', j);
+            continue;
+        end
         
         numFrames = size(testFeats, 2);
         if numFrames < 5, continue; end
@@ -44,14 +55,26 @@ for i = 1:numSpeakers
             end
             
             minDist = min(allTemplateDists);
+            dists(k) = minDist; % Store for decision
+            
             if i == k
                 genuineScores = [genuineScores; minDist];
             else
                 impostorScores = [impostorScores; minDist];
             end
         end
+        
+        [~, predId] = min(dists);
+        confusionMat(i, predId) = confusionMat(i, predId) + 1;
     end
 end
+
+% Stats calculation
+rowSums = sum(confusionMat, 2);
+rowSums(rowSums == 0) = 1; % Prevent NaN
+confusionMat = (confusionMat ./ rowSums) * 100;
+figure('Name', 'Baseline DTW Results');
+imagesc(confusionMat); colorbar; title('Baseline DTW Confusion Matrix (%)');
 
 minS = min([genuineScores; impostorScores]);
 maxS = max([genuineScores; impostorScores]);

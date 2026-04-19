@@ -28,9 +28,13 @@ while nve < k
             subset = d(:, ind==i);
             if ~isempty(subset)
                 r(:, i) = mean(subset, 2);
-                % Compute distortion (optional, but good for convergence)
+                % Compute distortion
                 x = disteu(subset, r(:, i));
                 t = t + sum(x);
+            else
+                % If no vectors assigned, keep the centroid or perturb it
+                % to avoid NaNs but this case is rare with large dataset
+                warning('Cluster %d is empty. Maintaining previous centroid.', i);
             end
         end
         

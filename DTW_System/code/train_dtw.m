@@ -20,7 +20,12 @@ for i = 1:numSpeakers
     
     speakerTemplates = cell(1, length(wavFiles));
     for j = 1:length(wavFiles)
-        [audio, ~] = audioread(fullfile(speakerPath, wavFiles(j).name));
+        try
+            [audio, ~] = audioread(fullfile(speakerPath, wavFiles(j).name));
+        catch
+            warning('Could not read file %s. Skipping.', wavFiles(j).name);
+            continue;
+        end
         preEmphasized = filter([1 -0.97], 1, audio);
         coeffs = mfcc(preEmphasized, fs, 'NumCoeffs', numCoeffs);
         
@@ -30,8 +35,13 @@ for i = 1:numSpeakers
         isSpeech = energy > threshold;
         
         % Feature Pruning (Keep C2:C13)
-        speakerTemplates{j} = coeffs(isSpeech, 2:end)'; 
+        currentFeats = coeffs(isSpeech, 2:end)';
+        if ~isempty(currentFeats)
+            speakerTemplates{j} = currentFeats; 
+        end
     end
+    % Remove empty entries if any files were skipped
+    speakerTemplates = speakerTemplates(~cellfun('isempty', speakerTemplates));
     templates{i} = speakerTemplates;
 end
 
