@@ -9,6 +9,7 @@ fprintf('=========================================\n\n');
 % 1. Setup paths
 addpath(genpath('Shared/code'));
 addpath(genpath('GMM_System/code'));
+addpath(genpath('VQ_System/code'));
 
 % 2. Recording Parameters
 fs = 16000;

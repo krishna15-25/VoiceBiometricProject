@@ -9,6 +9,7 @@ fprintf('=========================================\n\n');
 % 1. Initialization - Add relative paths
 addpath(genpath('Shared/code'));
 addpath(genpath('GMM_System/code'));
+addpath(genpath('VQ_System/code'));
 
 % 2. Choice: Record or Load
 choice = input('Press [1] to Record New Voice, [2] to Load a File: ');
