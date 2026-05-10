@@ -1,6 +1,9 @@
+# MATLAB temporary files
 *.asv
 *.mex*
-*.mat
 *.slxc
 *.log
 .DS_Store
+
+# Allow trained models to be uploaded
+!*.mat
