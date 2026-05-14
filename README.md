@@ -50,3 +50,14 @@ Even though it is pre-trained, the system executes a full 5-stage biometric proc
 
 ## 📖 References
 *   *Reynolds, D.A. (2002). "An Overview of Automatic Speaker Recognition Technology". Proc. IEEE ICASSP.*
+
+---
+
+## 💡 Best Practices for High Accuracy
+For the most reliable biometric identification, please ensure the following conditions are met during both **Signup** and **Login**:
+
+1.  **Microphone Quality**: Use a high-quality external microphone or a dedicated headset. Standard laptop microphones can often introduce "muffled" audio which reduces the clarity of your voiceprint.
+2.  **Quiet Environment**: Perform recordings in a room with minimal background noise. The AI is designed to ignore some noise, but loud fans, air conditioners, or background chatter can interfere with the subtle frequencies of your voice.
+3.  **Consistent Distance**: Maintain a steady distance (about 4–6 inches) from the microphone. Moving too far away or too close between recordings can change the recorded volume and spectral shape.
+4.  **Natural Speech**: Speak clearly and at a natural pace. Avoid shouting or whispering, as these change the physical resonance of your vocal tract.
+
