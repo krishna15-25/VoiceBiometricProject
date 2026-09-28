@@ -27,7 +27,6 @@ for i = 1:numSpeakers
         energy = coeffs(:,1);
         isSpeech = energy > (min(energy) + 0.7*(max(energy) - min(energy)));
         testFeats = coeffs(isSpeech, 2:end); % Use C2:C13
-        
         logLikelihoods = zeros(1, numSpeakers);
         for k = 1:numSpeakers
             if ~isempty(gmmModels{k})
@@ -35,7 +34,6 @@ for i = 1:numSpeakers
             else
                 logLikelihoods(k) = -inf;
             end
-            
             % Normalize Likelihood by frame count
             score = -logLikelihoods(k) / size(testFeats, 1);
             if i == k, genuineScores = [genuineScores; score];
@@ -43,7 +41,6 @@ for i = 1:numSpeakers
         end
     end
 end
-
 % Stats calculation
 minS = min([genuineScores; impostorScores]);
 maxS = max([genuineScores; impostorScores]);
@@ -56,7 +53,6 @@ end
 [~, idx] = min(abs(far - frr));
 EER = (far(idx) + frr(idx)) / 2;
 threshold = thresholds(idx);
-
 save('../results/gmm_performance.mat', 'far', 'frr', 'EER', 'threshold');
 fprintf('Final Optimized GMM EER: %.2f%%\n', EER*100);
 end
